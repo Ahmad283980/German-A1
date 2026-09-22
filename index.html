@@ -774,6 +774,7 @@ textarea:focus{border-color:var(--green)}
     <div class="list-item"><span class="ic">4️⃣</span><span class="tx"><b>Write your own answer</b><span>Save one sentence per topic — they become your speech in “My Intro”.</span></span></div>
     <div class="list-item"><span class="ic">5️⃣</span><span class="tx"><b>Mark as learned</b><span>The green button ticks the circle and opens the next topic. The bar at the top fills up.</span></span></div>
     <div class="list-item"><span class="ic">6️⃣</span><span class="tx"><b>Add more videos or texts</b><span>Library → ＋ Add a video (paste a link) or 📖 Add a story / word list. Everything you add stays on this device — back it up from Help if you want to keep it safe.</span></span></div>
+    <div class="list-item" onclick="closeAllSheets();checkForUpdates()"><span class="ic">🔄</span><span class="tx"><b>Check for updates</b><span>Looks for a newer version of the app and loads it (needs internet).</span></span></div>
     <div class="list-item" onclick="closeAllSheets();showBackupSheet()"><span class="ic">🗄️</span><span class="tx"><b>Backup &amp; restore</b><span>Save your added videos, answers and progress to a file — or bring them onto a new phone.</span></span></div>
     <div class="list-item" onclick="closeAllSheets();installAsApp()"><span class="ic">📲</span><span class="tx"><b>Install as an app</b><span>Get a home-screen icon that opens full screen and works offline.</span></span><span class="pill green">New</span></div>
     <div class="card tight" style="margin-top:16px">
@@ -2486,6 +2487,26 @@ renderIntro();
 renderLibrary();
 if (!loadJSON(LS.libSeen, false)) { const d = $('libDot'); if (d) d.style.display = 'block'; }
 
+/* ---------------- checking for a newer version of the app ---------------- */
+async function checkForUpdates() {
+  if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) {
+    toast('This copy is a single file. To update it, download the newest file and open that.', 4200);
+    return;
+  }
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) { location.reload(); return; }
+    toast('🔄 Looking for a newer version…', 1600);
+    await reg.update();
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => /deutschlern/.test(k)).map(k => caches.delete(k)));
+    setTimeout(() => location.reload(), 900);
+  } catch (e) {
+    toast('Could not check right now — try again with internet.', 3200);
+  }
+}
+async function clearCacheAndReload() { await checkForUpdates(); }
+
 /* ---------------- backup & restore: your own content, safe across updates ---------------- */
 function buildBackup() {
   const data = {};
@@ -2633,6 +2654,7 @@ window.DL = {
   openAddStory, saveNewStory, buildStoryLesson, parseWordList, lookupWord, openWord, saveWordFromSheet,
   switchStoryMode, clozeQuiz, closeWordSheet,
   installAsApp, showInstallSheet, canInstall, saveAppFile, isLocalFile,
+  checkForUpdates, clearCacheAndReload,
   buildBackup, backupJSONString, backupFileName, applyBackup, exportBackup, copyBackup,
   shareBackup, restoreBackupText, restoreBackupFromFile, showBackupSheet,
   get dict() { return DICT; },
@@ -2642,7 +2664,13 @@ window.DL = {
 </script>
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').then(() => { window.PWA_OFFLINE_READY = true; }).catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    window.PWA_SW_REG = reg;
+    window.PWA_OFFLINE_READY = true;
+    reg.update().catch(() => {});                      // ask GitHub for a newer build straight away
+    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { window.PWA_UPDATED = true; });
 }
 </script>
 </body>
