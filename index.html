@@ -1388,7 +1388,7 @@ function sentenceRowHtml(s, sub) {
   else if (s.same) second = `<div class="sentence-en same">🔁 same in German and English — a phrase practised on screen</div>`;
   return `
     <div class="sentence">
-      <div class="speaker">${esc((s.speaker || '💬').slice(0, 4))}</div>
+      <div class="speaker">${esc(s.speaker ? s.speaker.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '💬')}</div>
       <div class="sentence-body">
         <div class="sentence-de">${sub && sub.topicKind === 'story' ? tappable(s.de) : esc(s.de)}</div>
         ${second}
@@ -1412,7 +1412,13 @@ function searchAllLines(query) {
   });
   return found;
 }
+function scriptSentenceCount() {
+  let n = 0;
+  allLessons.forEach(l => (l.sublessons || []).forEach(s => { n += (s.sentences || []).length; }));
+  return n;
+}
 function renderScriptSearch(sub) {
+  const scriptTotal = scriptSentenceCount();
   const hits = scriptQuery ? searchAllLines(scriptQuery) : [];
   const episodes = new Set(hits.map(h => h.sub.id)).size;
   const rows = hits.map(({ s, sub: sb, idx }) => `
@@ -1436,7 +1442,7 @@ function renderScriptSearch(sub) {
       <input type="text" id="scriptSearch" placeholder="Type a German or English word…" value="${esc(scriptQuery)}"
              oninput="scriptQuery=this.value.trim().toLowerCase();renderSheetBody()">
       ${scriptQuery ? (rows || '<div class="empty-note">No line contains that word.</div>')
-        : '<div class="tiny muted">Every line of all 76 episodes and the full film is searchable — tap a result to open its topic.</div>'}
+        : `<div class="tiny muted">Searches every line of the ${scriptTotal} sentences in this course — tap a result to open its topic.</div>`}
     </div>`;
 }
 function sentenceRows(sub) {
