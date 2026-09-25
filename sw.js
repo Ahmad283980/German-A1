@@ -5,7 +5,7 @@
    * icons, manifest and other assets stay cache-first for instant loading.
    * a new version deletes the previous cache, so nothing goes stale.
 */
-const CACHE = 'deutschlern-v3';
+const CACHE = 'deutschlern-v4';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png',
